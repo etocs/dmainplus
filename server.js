@@ -195,6 +195,7 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
+        console.warn('HEAD ping failed, retrying with GET', error.message || error);
         response = await performRequest('GET');
       } else {
         throw error;
@@ -205,7 +206,7 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
       latency,
       status: response.ok ? 'ok' : 'degraded',
       upstreamStatus,
-      reachable: response.ok || response.status < 500
+      reachable: response.ok || (response.status >= 200 && response.status < 400)
     });
   } catch (error) {
     return res.json({

@@ -7,6 +7,7 @@ const announcementBox = document.getElementById('announcement');
 const domainGrid = document.getElementById('domain-grid');
 const latencyHint = document.getElementById('latency-hint');
 const tokenKey = 'dmainplus_user_token';
+const MAX_CONCURRENT_LATENCY_TESTS = 3;
 
 function setMessage(target, text, type = 'info') {
   if (!target) return;
@@ -149,7 +150,6 @@ async function testLatency(url, statusEl, btn, options = {}) {
 function startAutoLatency(queue) {
   if (!queue.length) return;
   updateLatencyHint('正在自动测试延迟...');
-  const concurrency = 3;
   let active = 0;
 
   const runNext = () => {
@@ -157,7 +157,7 @@ function startAutoLatency(queue) {
       updateLatencyHint('自动测试完成，可点击“重新测试”刷新结果');
       return;
     }
-    while (active < concurrency && queue.length) {
+    while (active < MAX_CONCURRENT_LATENCY_TESTS && queue.length) {
       const task = queue.shift();
       active += 1;
       testLatency(task.url, task.statusEl, task.btn, { auto: true })
