@@ -190,12 +190,12 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
     let response;
     try {
       response = await performRequest('HEAD');
-      if (response.status === 405) {
+      if (response.status === 405 || response.status === 501) {
         response = await performRequest('GET');
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
-        console.warn('HEAD ping failed, retrying with GET', error.message || error);
+        console.warn('HEAD request failed, retrying with GET', error.message || error);
         response = await performRequest('GET');
       } else {
         throw error;

@@ -161,7 +161,7 @@ function startAutoLatency(queue) {
       const task = queue.shift();
       active += 1;
       testLatency(task.url, task.statusEl, task.btn, { auto: true })
-        .catch(() => {})
+        .catch((err) => console.warn('自动延迟检测失败', task.url, err))
         .finally(() => {
           active -= 1;
           runNext();
