@@ -162,7 +162,7 @@ function startAutoLatency(queue) {
       active += 1;
       testLatency(task.url, task.statusEl, task.btn, { auto: true })
         .catch((err) =>
-          console.warn('自动延迟检测失败', task.url, err && err.message ? err.message : err)
+          console.warn('自动延迟检测失败', task.url, err?.message || err)
         )
         .finally(() => {
           active -= 1;
