@@ -7,6 +7,7 @@ const adminLoginMessage = document.getElementById('admin-login-message');
 const userPassForm = document.getElementById('user-pass-form');
 const userPassMessage = document.getElementById('user-pass-message');
 const newUserPass = document.getElementById('new-user-pass');
+const userPassList = document.getElementById('user-pass-list');
 
 const adminPassForm = document.getElementById('admin-pass-form');
 const adminPassMessage = document.getElementById('admin-pass-message');
@@ -64,12 +65,47 @@ async function loadAdminData() {
       return;
     }
     const data = await res.json();
+    renderUserPasswords(data.userPasswords || []);
     renderDomains(data.domains || []);
     announcementInput.value = data.announcement || '';
     toggleView(true);
   } catch (error) {
     setMessage(adminLoginMessage, '网络异常，请检查连接', 'error');
   }
+}
+
+function renderUserPasswords(passwords) {
+  userPassList.innerHTML = '';
+  if (!passwords.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = '暂无前端密码，请至少添加一个';
+    userPassList.appendChild(empty);
+    return;
+  }
+
+  passwords.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'list-item';
+
+    const info = document.createElement('div');
+    info.innerHTML = `<strong>密码 ${item.hint ? `...${item.hint}` : ''}</strong><br/><span class="muted">${
+      item.createdAt ? new Date(item.createdAt).toLocaleString() : '创建时间未知'
+    }</span>`;
+    row.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn secondary';
+    delBtn.type = 'button';
+    delBtn.textContent = '删除';
+    delBtn.addEventListener('click', () => deleteUserPassword(item.id, delBtn));
+    actions.appendChild(delBtn);
+
+    row.appendChild(actions);
+    userPassList.appendChild(row);
+  });
 }
 
 function renderDomains(domains) {
@@ -122,6 +158,28 @@ async function deleteDomain(id, button) {
   }
 }
 
+async function deleteUserPassword(id, button) {
+  button.disabled = true;
+  try {
+    const res = await fetch(`/api/admin/user-passwords/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeader()
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      const message = payload && payload.message ? payload.message : '删除失败，请稍后重试';
+      setMessage(userPassMessage, message, 'error');
+      return;
+    }
+    setMessage(userPassMessage, '前端密码已删除', 'success');
+    await loadAdminData();
+  } catch (error) {
+    setMessage(userPassMessage, '网络异常，请稍后重试', 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
 adminLoginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const password = adminPasswordInput.value.trim();
@@ -157,7 +215,7 @@ userPassForm.addEventListener('submit', async (e) => {
     return;
   }
   try {
-    const res = await fetch('/api/admin/user-password', {
+    const res = await fetch('/api/admin/user-passwords', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -166,11 +224,14 @@ userPassForm.addEventListener('submit', async (e) => {
       body: JSON.stringify({ password })
     });
     if (!res.ok) {
-      setMessage(userPassMessage, '更新失败，请检查登录或密码长度', 'error');
+      const payload = await res.json().catch(() => ({}));
+      const message = payload && payload.message ? payload.message : '更新失败，请检查登录或密码长度';
+      setMessage(userPassMessage, message, 'error');
       return;
     }
-    setMessage(userPassMessage, '前端密码已更新', 'success');
+    setMessage(userPassMessage, '前端密码已新增', 'success');
     newUserPass.value = '';
+    await loadAdminData();
   } catch (error) {
     setMessage(userPassMessage, '网络异常，请稍后重试', 'error');
   }

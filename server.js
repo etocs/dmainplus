@@ -48,12 +48,31 @@ async function ensureDataFile() {
   }
 }
 
+function buildUserPasswordEntry(hash) {
+  return {
+    id: crypto.randomUUID(),
+    hash,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function maskPasswordEntry(entry) {
+  if (!entry) return null;
+  const hint = typeof entry.hash === 'string' && entry.hash.length >= 6 ? entry.hash.slice(-6) : '';
+  return {
+    id: entry.id,
+    createdAt: entry.createdAt,
+    hint
+  };
+}
+
 async function initializeData() {
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+  const userPasswordHash = await bcrypt.hash(DEFAULT_DATA.defaultUserPassword, 10);
   const payload = {
     announcement: DEFAULT_DATA.announcement,
     domains: DEFAULT_DATA.domains.map((item) => ({ ...item })),
-    userPasswordHash: await bcrypt.hash(DEFAULT_DATA.defaultUserPassword, 10),
+    userPasswords: [buildUserPasswordEntry(userPasswordHash)],
     adminPasswordHash: await bcrypt.hash(DEFAULT_DATA.defaultAdminPassword, 10)
   };
   await fs.writeFile(DATA_FILE, JSON.stringify(payload, null, 2), 'utf-8');
@@ -74,10 +93,46 @@ async function normalizeData(existing) {
     updated = true;
   }
 
-  if (!data.userPasswordHash) {
-    data.userPasswordHash = await bcrypt.hash(DEFAULT_DATA.defaultUserPassword, 10);
+  const existingUserPasswords = Array.isArray(data.userPasswords) ? data.userPasswords : [];
+
+  const normalizedUserPasswords = [];
+  for (const item of existingUserPasswords) {
+    if (item && typeof item.hash === 'string') {
+      normalizedUserPasswords.push({
+        id: item.id || crypto.randomUUID(),
+        hash: item.hash,
+        createdAt: item.createdAt || new Date().toISOString()
+      });
+    }
+  }
+
+  if (!normalizedUserPasswords.length && typeof data.userPasswordHash === 'string') {
+    normalizedUserPasswords.push(buildUserPasswordEntry(data.userPasswordHash));
+    delete data.userPasswordHash;
+    updated = true;
+  } else if (typeof data.userPasswordHash === 'string') {
+    delete data.userPasswordHash;
     updated = true;
   }
+
+  if (!normalizedUserPasswords.length) {
+    const defaultHash = await bcrypt.hash(DEFAULT_DATA.defaultUserPassword, 10);
+    normalizedUserPasswords.push(buildUserPasswordEntry(defaultHash));
+    updated = true;
+  }
+
+  if (
+    normalizedUserPasswords.length !== existingUserPasswords.length ||
+    normalizedUserPasswords.some((entry, index) => {
+      const origin = existingUserPasswords[index];
+      if (!origin) return true;
+      return origin.id !== entry.id || origin.createdAt !== entry.createdAt;
+    })
+  ) {
+    updated = true;
+  }
+
+  data.userPasswords = normalizedUserPasswords;
 
   if (!data.adminPasswordHash) {
     data.adminPasswordHash = await bcrypt.hash(DEFAULT_DATA.defaultAdminPassword, 10);
@@ -127,7 +182,18 @@ app.post('/api/user/login', async (req, res) => {
     return res.status(400).json({ message: '请输入密码' });
   }
   const data = await ensureDataFile();
-  const ok = await bcrypt.compare(password, data.userPasswordHash);
+  const candidates = Array.isArray(data.userPasswords) ? data.userPasswords : [];
+  let ok = false;
+  for (const entry of candidates) {
+    if (entry && typeof entry.hash === 'string') {
+      // eslint-disable-next-line no-await-in-loop
+      const matched = await bcrypt.compare(password, entry.hash);
+      if (matched) {
+        ok = true;
+        break;
+      }
+    }
+  }
   if (!ok) {
     return res.status(401).json({ message: '密码错误' });
   }
@@ -232,8 +298,46 @@ app.get('/api/admin/data', authenticate('admin'), async (_req, res) => {
   const data = await ensureDataFile();
   res.json({
     announcement: data.announcement || '',
-    domains: data.domains || []
+    domains: data.domains || [],
+    userPasswords: (data.userPasswords || []).map((item) => maskPasswordEntry(item)).filter(Boolean)
   });
+});
+
+app.get('/api/admin/user-passwords', authenticate('admin'), async (_req, res) => {
+  const data = await ensureDataFile();
+  return res.json({
+    passwords: (data.userPasswords || []).map((item) => maskPasswordEntry(item)).filter(Boolean)
+  });
+});
+
+app.post('/api/admin/user-passwords', authenticate('admin'), async (req, res) => {
+  const password = (req.body && req.body.password) || '';
+  if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {
+    return res
+      .status(400)
+      .json({ message: `密码至少需要 ${PASSWORD_MIN_LENGTH} 位` });
+  }
+  const data = await ensureDataFile();
+  const hash = await bcrypt.hash(password, 10);
+  const entry = buildUserPasswordEntry(hash);
+  data.userPasswords.push(entry);
+  await saveData(data);
+  return res.status(201).json({ message: '前台密码已新增', password: maskPasswordEntry(entry) });
+});
+
+app.delete('/api/admin/user-passwords/:id', authenticate('admin'), async (req, res) => {
+  const { id } = req.params;
+  const data = await ensureDataFile();
+  const next = (data.userPasswords || []).filter((item) => item.id !== id);
+  if (next.length === (data.userPasswords || []).length) {
+    return res.status(404).json({ message: '未找到该前端密码' });
+  }
+  if (!next.length) {
+    return res.status(400).json({ message: '至少保留一个前端密码以保证可访问' });
+  }
+  data.userPasswords = next;
+  await saveData(data);
+  return res.json({ message: '前端密码已删除' });
 });
 
 app.post('/api/admin/user-password', authenticate('admin'), async (req, res) => {
@@ -244,7 +348,8 @@ app.post('/api/admin/user-password', authenticate('admin'), async (req, res) => 
       .json({ message: `密码至少需要 ${PASSWORD_MIN_LENGTH} 位` });
   }
   const data = await ensureDataFile();
-  data.userPasswordHash = await bcrypt.hash(password, 10);
+  const hash = await bcrypt.hash(password, 10);
+  data.userPasswords = [buildUserPasswordEntry(hash)];
   await saveData(data);
   return res.json({ message: '前台密码已更新' });
 });

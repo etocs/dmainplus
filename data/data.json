@@ -7,6 +7,12 @@
       "url": "https://example.com"
     }
   ],
-  "userPasswordHash": "$2b$10$vSsr8J1Sq18biNrcBgGWEuErUfasregNUhaKUshh9FFkWmVWSIIXi",
+  "userPasswords": [
+    {
+      "id": "default-user-password",
+      "hash": "$2b$10$vSsr8J1Sq18biNrcBgGWEuErUfasregNUhaKUshh9FFkWmVWSIIXi",
+      "createdAt": "2026-03-22T15:00:00.000Z"
+    }
+  ],
   "adminPasswordHash": "$2b$10$lzXCbUCq7i3BsLGEkK7eFegq5/.2bwtqT.xXzQvDEhRCeS32E0TgK"
 }

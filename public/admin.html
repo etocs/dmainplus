@@ -42,8 +42,8 @@
 
         <div class="layout">
           <div class="glass-card">
-            <h3>修改前端访问密码</h3>
-            <p class="muted">确保密码长度不少于 6 位，避免弱口令</p>
+            <h3>前端密码管理</h3>
+            <p class="muted">支持多个前端访问密码，至少保留一个有效密码</p>
             <form id="user-pass-form">
               <input
                 id="new-user-pass"
@@ -51,9 +51,11 @@
                 placeholder="输入新的前端密码"
                 required
               />
-              <button class="btn" type="submit">更新前端密码</button>
+              <button class="btn" type="submit">新增前端密码</button>
               <div class="alert hidden" id="user-pass-message"></div>
             </form>
+            <h4 style="margin-top: 16px">已配置的前端密码</h4>
+            <div class="list" id="user-pass-list"></div>
           </div>
 
           <div class="glass-card">
