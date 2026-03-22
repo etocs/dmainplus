@@ -1,0 +1,12 @@
+{
+  "announcement": "感谢您的赞助，以下域名可供专享使用：",
+  "domains": [
+    {
+      "id": "d4464f4f-9d47-4782-bcbc-5d7f0d4230df",
+      "name": "示例域名",
+      "url": "https://example.com"
+    }
+  ],
+  "userPasswordHash": "$2b$10$vSsr8J1Sq18biNrcBgGWEuErUfasregNUhaKUshh9FFkWmVWSIIXi",
+  "adminPasswordHash": "$2b$10$lzXCbUCq7i3BsLGEkK7eFegq5/.2bwtqT.xXzQvDEhRCeS32E0TgK"
+}
