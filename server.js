@@ -58,7 +58,7 @@ function buildUserPasswordEntry(hash) {
 
 function maskPasswordEntry(entry) {
   if (!entry) return null;
-  const hint = typeof entry.hash === 'string' && entry.hash.length >= 6 ? entry.hash.slice(-6) : '';
+  const hint = typeof entry.hash === 'string' && entry.hash.length >= 4 ? entry.hash.slice(-4) : '';
   return {
     id: entry.id,
     createdAt: entry.createdAt,
@@ -121,14 +121,16 @@ async function normalizeData(existing) {
     updated = true;
   }
 
-  if (
-    normalizedUserPasswords.length !== existingUserPasswords.length ||
-    normalizedUserPasswords.some((entry, index) => {
-      const origin = existingUserPasswords[index];
-      if (!origin) return true;
-      return origin.id !== entry.id || origin.createdAt !== entry.createdAt;
-    })
-  ) {
+  const isSameUserPasswords =
+    normalizedUserPasswords.length === existingUserPasswords.length &&
+    normalizedUserPasswords.every((entry) => {
+      const matched = existingUserPasswords.find(
+        (item) => item && item.id === entry.id && item.createdAt === entry.createdAt && item.hash === entry.hash
+      );
+      return Boolean(matched);
+    });
+
+  if (!isSameUserPasswords) {
     updated = true;
   }
 
@@ -183,17 +185,13 @@ app.post('/api/user/login', async (req, res) => {
   }
   const data = await ensureDataFile();
   const candidates = Array.isArray(data.userPasswords) ? data.userPasswords : [];
-  let ok = false;
-  for (const entry of candidates) {
-    if (entry && typeof entry.hash === 'string') {
-      // eslint-disable-next-line no-await-in-loop
-      const matched = await bcrypt.compare(password, entry.hash);
-      if (matched) {
-        ok = true;
-        break;
-      }
-    }
-  }
+  const comparisons = await Promise.all(
+    candidates.map((entry) => {
+      if (!entry || typeof entry.hash !== 'string') return Promise.resolve(false);
+      return bcrypt.compare(password, entry.hash);
+    })
+  );
+  const ok = comparisons.some(Boolean);
   if (!ok) {
     return res.status(401).json({ message: '密码错误' });
   }
@@ -322,22 +320,25 @@ app.post('/api/admin/user-passwords', authenticate('admin'), async (req, res) =>
   const entry = buildUserPasswordEntry(hash);
   data.userPasswords.push(entry);
   await saveData(data);
-  return res.status(201).json({ message: '前台密码已新增', password: maskPasswordEntry(entry) });
+  return res
+    .status(201)
+    .json({ message: '前端访问密码已新增', password: maskPasswordEntry(entry) });
 });
 
 app.delete('/api/admin/user-passwords/:id', authenticate('admin'), async (req, res) => {
   const { id } = req.params;
   const data = await ensureDataFile();
-  const next = (data.userPasswords || []).filter((item) => item.id !== id);
-  if (next.length === (data.userPasswords || []).length) {
-    return res.status(404).json({ message: '未找到该前端密码' });
+  const currentUserPasswords = data.userPasswords || [];
+  const next = currentUserPasswords.filter((item) => item.id !== id);
+  if (next.length === currentUserPasswords.length) {
+    return res.status(404).json({ message: '未找到该前端访问密码' });
   }
   if (!next.length) {
-    return res.status(400).json({ message: '至少保留一个前端密码以保证可访问' });
+    return res.status(400).json({ message: '至少保留一个前端访问密码以保证可访问' });
   }
   data.userPasswords = next;
   await saveData(data);
-  return res.json({ message: '前端密码已删除' });
+  return res.json({ message: '前端访问密码已删除' });
 });
 
 app.post('/api/admin/user-password', authenticate('admin'), async (req, res) => {
@@ -351,7 +352,10 @@ app.post('/api/admin/user-password', authenticate('admin'), async (req, res) => 
   const hash = await bcrypt.hash(password, 10);
   data.userPasswords = [buildUserPasswordEntry(hash)];
   await saveData(data);
-  return res.json({ message: '前台密码已更新' });
+  return res.json({
+    message: '前端访问密码已重置，仅保留最新设置的密码',
+    warning: '该接口将逐步弃用，请使用 /api/admin/user-passwords 添加或删除前端访问密码'
+  });
 });
 
 app.post('/api/admin/admin-password', authenticate('admin'), async (req, res) => {

@@ -89,9 +89,14 @@ function renderUserPasswords(passwords) {
     row.className = 'list-item';
 
     const info = document.createElement('div');
-    info.innerHTML = `<strong>密码 ${item.hint ? `...${item.hint}` : ''}</strong><br/><span class="muted">${
-      item.createdAt ? new Date(item.createdAt).toLocaleString() : '创建时间未知'
-    }</span>`;
+    const title = document.createElement('strong');
+    title.textContent = `密码 ${item.hint ? `...${item.hint}` : ''}`;
+    const time = document.createElement('span');
+    time.className = 'muted';
+    time.textContent = item.createdAt ? new Date(item.createdAt).toLocaleString() : '创建时间未知';
+    info.appendChild(title);
+    info.appendChild(document.createElement('br'));
+    info.appendChild(time);
     row.appendChild(info);
 
     const actions = document.createElement('div');
@@ -171,7 +176,7 @@ async function deleteUserPassword(id, button) {
       setMessage(userPassMessage, message, 'error');
       return;
     }
-    setMessage(userPassMessage, '前端密码已删除', 'success');
+    setMessage(userPassMessage, '前端访问密码已删除', 'success');
     await loadAdminData();
   } catch (error) {
     setMessage(userPassMessage, '网络异常，请稍后重试', 'error');
@@ -225,11 +230,12 @@ userPassForm.addEventListener('submit', async (e) => {
     });
     if (!res.ok) {
       const payload = await res.json().catch(() => ({}));
-      const message = payload && payload.message ? payload.message : '更新失败，请检查登录或密码长度';
+      const message =
+        payload && payload.message ? payload.message : '更新失败，请检查登录或密码长度';
       setMessage(userPassMessage, message, 'error');
       return;
     }
-    setMessage(userPassMessage, '前端密码已新增', 'success');
+    setMessage(userPassMessage, '前端访问密码已新增', 'success');
     newUserPass.value = '';
     await loadAdminData();
   } catch (error) {
