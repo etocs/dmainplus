@@ -195,7 +195,7 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
-        console.warn('HEAD request failed, retrying with GET', error.message || error);
+        console.warn('HEAD request failed, retrying with GET', target.toString(), error.message || error);
         response = await performRequest('GET');
       } else {
         throw error;
