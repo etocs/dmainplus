@@ -206,7 +206,7 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
       latency,
       status: response.ok ? 'ok' : 'degraded',
       upstreamStatus,
-      reachable: response.ok || (response.status >= 200 && response.status < 400)
+      reachable: response.status >= 200 && response.status < 300
     });
   } catch (error) {
     return res.json({
