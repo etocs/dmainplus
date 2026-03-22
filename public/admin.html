@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dmainplus 后台管理</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="glass-card" id="admin-login-card">
+        <div class="header">
+          <div class="title-group">
+            <h1>后台登录</h1>
+            <p>输入管理员密码，维护前端密码、域名与公告</p>
+          </div>
+          <span class="badge">后台安全 · 仅限管理员</span>
+        </div>
+        <form id="admin-login-form">
+          <label for="admin-password">管理员密码</label>
+          <input
+            id="admin-password"
+            name="password"
+            type="password"
+            placeholder="请输入管理员密码"
+            autocomplete="current-password"
+            required
+          />
+          <button class="btn" type="submit">进入后台</button>
+          <div class="alert hidden" id="admin-login-message"></div>
+        </form>
+      </div>
+
+      <div class="glass-card hidden" id="admin-panel">
+        <div class="header">
+          <div class="title-group">
+            <h1>后台控制台</h1>
+            <p class="muted">管理前端访问密码、域名列表与公告</p>
+          </div>
+          <span class="badge">实时保存 · 加密存储</span>
+        </div>
+
+        <div class="layout">
+          <div class="glass-card">
+            <h3>修改前端访问密码</h3>
+            <p class="muted">确保密码长度不少于 6 位，避免弱口令</p>
+            <form id="user-pass-form">
+              <input
+                id="new-user-pass"
+                type="password"
+                placeholder="输入新的前端密码"
+                required
+              />
+              <button class="btn" type="submit">更新前端密码</button>
+              <div class="alert hidden" id="user-pass-message"></div>
+            </form>
+          </div>
+
+          <div class="glass-card">
+            <h3>修改管理员密码</h3>
+            <p class="muted">建议定期更新管理员密码，保持安全</p>
+            <form id="admin-pass-form">
+              <input
+                id="new-admin-pass"
+                type="password"
+                placeholder="输入新的管理员密码"
+                required
+              />
+              <button class="btn" type="submit">更新管理员密码</button>
+              <div class="alert hidden" id="admin-pass-message"></div>
+            </form>
+          </div>
+
+          <div class="glass-card full">
+            <h3>公告管理</h3>
+            <p class="muted">前端公告支持换行，字数建议控制在 200 字以内</p>
+            <form id="announcement-form">
+              <textarea id="announcement-input" placeholder="输入公告内容"></textarea>
+              <button class="btn" type="submit">发布公告</button>
+              <div class="alert hidden" id="announcement-message"></div>
+            </form>
+          </div>
+
+          <div class="glass-card">
+            <h3>新增前端域名</h3>
+            <p class="muted">支持 http/https 域名，名称可选</p>
+            <form id="add-domain-form">
+              <input id="domain-name" type="text" placeholder="域名别名（可选）" />
+              <input
+                id="domain-url"
+                type="url"
+                placeholder="输入完整域名，例如 https://example.com"
+                required
+              />
+              <button class="btn" type="submit">添加域名</button>
+              <div class="alert hidden" id="add-domain-message"></div>
+            </form>
+          </div>
+
+          <div class="glass-card">
+            <h3>当前域名列表</h3>
+            <div class="list" id="domain-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>

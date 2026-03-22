@@ -1,0 +1,28 @@
+{
+  "name": "dmainplus",
+  "version": "1.0.0",
+  "description": "域名发布",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"No automated tests are configured\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etocs/dmainplus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/etocs/dmainplus/issues"
+  },
+  "homepage": "https://github.com/etocs/dmainplus#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

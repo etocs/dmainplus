@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dmainplus 专享域名</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="glass-card" id="login-card">
+        <div class="header">
+          <div class="title-group">
+            <h1>进入专享域名</h1>
+            <p>输入访问密码后即可查看赞助域名列表</p>
+          </div>
+          <span class="badge">安全加密 · 私密访问</span>
+        </div>
+        <form id="login-form">
+          <label for="user-password">访问密码</label>
+          <input
+            id="user-password"
+            name="password"
+            type="password"
+            placeholder="请输入访问密码"
+            autocomplete="current-password"
+            required
+          />
+          <button class="btn" type="submit">进入</button>
+          <div class="alert hidden" id="login-message"></div>
+        </form>
+      </div>
+
+      <div class="glass-card hidden" id="content-card">
+        <div class="header">
+          <div class="title-group">
+            <h1>专享域名列表</h1>
+            <p class="muted">以下为赞助后可用的域名，支持实时延迟测试</p>
+          </div>
+          <span class="badge">极速接入 · 稳定守护</span>
+        </div>
+
+        <div class="alert announcement" id="announcement"></div>
+        <div class="grid" id="domain-grid"></div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
