@@ -173,15 +173,50 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   const started = Date.now();
+  let upstreamStatus = null;
+
+  async function performRequest(method) {
+    const response = await fetch(target.toString(), {
+      method,
+      redirect: 'follow',
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    upstreamStatus = response.status;
+    return response;
+  }
 
   try {
-    await fetch(target.toString(), { method: 'HEAD', signal: controller.signal });
-    clearTimeout(timeout);
+    let response;
+    try {
+      response = await performRequest('HEAD');
+      if (response.status === 405) {
+        response = await performRequest('GET');
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        response = await performRequest('GET');
+      } else {
+        throw error;
+      }
+    }
     const latency = Date.now() - started;
-    return res.json({ latency });
+    return res.json({
+      latency,
+      status: response.ok ? 'ok' : 'degraded',
+      upstreamStatus,
+      reachable: response.ok || response.status < 500
+    });
   } catch (error) {
+    return res.json({
+      latency: Date.now() - started,
+      status: error.name === 'AbortError' ? 'timeout' : 'network-error',
+      upstreamStatus,
+      reachable: false,
+      message: '延迟测试失败，请稍后重试'
+    });
+  } finally {
     clearTimeout(timeout);
-    return res.status(504).json({ message: '延迟测试失败，请稍后重试' });
   }
 });
 

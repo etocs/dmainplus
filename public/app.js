@@ -5,6 +5,7 @@ const passwordInput = document.getElementById('user-password');
 const loginMessage = document.getElementById('login-message');
 const announcementBox = document.getElementById('announcement');
 const domainGrid = document.getElementById('domain-grid');
+const latencyHint = document.getElementById('latency-hint');
 const tokenKey = 'dmainplus_user_token';
 
 function setMessage(target, text, type = 'info') {
@@ -55,6 +56,7 @@ function renderAnnouncement(text) {
 
 function renderDomains(domains) {
   domainGrid.innerHTML = '';
+  updateLatencyHint('');
   if (!domains.length) {
     const empty = document.createElement('p');
     empty.className = 'muted';
@@ -62,6 +64,8 @@ function renderDomains(domains) {
     domainGrid.appendChild(empty);
     return;
   }
+
+  const queue = [];
 
   domains.forEach((item) => {
     const card = document.createElement('div');
@@ -81,12 +85,12 @@ function renderDomains(domains) {
 
     const status = document.createElement('span');
     status.className = 'status muted';
-    status.textContent = '未测试';
+    status.textContent = '等待自动测试';
 
     const btn = document.createElement('button');
     btn.className = 'btn secondary';
     btn.type = 'button';
-    btn.textContent = '测试延迟';
+    btn.textContent = '重新测试';
     btn.addEventListener('click', () => testLatency(item.url, status, btn));
 
     actions.appendChild(status);
@@ -94,13 +98,19 @@ function renderDomains(domains) {
     card.appendChild(actions);
 
     domainGrid.appendChild(card);
+    queue.push({ url: item.url, statusEl: status, btn });
   });
+
+  startAutoLatency(queue);
 }
 
-async function testLatency(url, statusEl, btn) {
-  statusEl.textContent = '测试中...';
+async function testLatency(url, statusEl, btn, options = {}) {
+  const { auto = false } = options;
+  statusEl.textContent = auto ? '自动测试中...' : '测试中...';
   statusEl.className = 'status muted';
-  btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+  }
   try {
     const res = await fetch('/api/ping', {
       method: 'POST',
@@ -110,18 +120,62 @@ async function testLatency(url, statusEl, btn) {
       },
       body: JSON.stringify({ url })
     });
-    if (!res.ok) {
+    const data = await res.json();
+    if (!res.ok || data.status === 'timeout' || data.reachable === false) {
       throw new Error('ping failed');
     }
-    const data = await res.json();
-    statusEl.textContent = `${data.latency} ms`;
-    statusEl.className = 'status ok';
+    if (typeof data.latency === 'number' && data.status !== 'degraded') {
+      statusEl.textContent = `${data.latency} ms`;
+      statusEl.className = 'status ok';
+    } else if (typeof data.latency === 'number') {
+      statusEl.textContent = `${data.latency} ms · 可访问`;
+      statusEl.className = 'status warn';
+    } else {
+      statusEl.textContent = '未获取到延迟';
+      statusEl.className = 'status warn';
+    }
+    return true;
   } catch (error) {
     statusEl.textContent = '测试失败';
     statusEl.className = 'status fail';
+    return false;
   } finally {
-    btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+    }
   }
+}
+
+function startAutoLatency(queue) {
+  if (!queue.length) return;
+  updateLatencyHint('正在自动测试延迟...');
+  const concurrency = 3;
+  let active = 0;
+
+  const runNext = () => {
+    if (!queue.length && active === 0) {
+      updateLatencyHint('自动测试完成，可点击“重新测试”刷新结果');
+      return;
+    }
+    while (active < concurrency && queue.length) {
+      const task = queue.shift();
+      active += 1;
+      testLatency(task.url, task.statusEl, task.btn, { auto: true })
+        .catch(() => {})
+        .finally(() => {
+          active -= 1;
+          runNext();
+        });
+    }
+  };
+
+  runNext();
+}
+
+function updateLatencyHint(text) {
+  if (!latencyHint) return;
+  latencyHint.textContent = text || '';
+  latencyHint.classList.toggle('hidden', !text);
 }
 
 function toggleView(authed) {
