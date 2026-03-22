@@ -122,8 +122,14 @@ async function testLatency(url, statusEl, btn, options = {}) {
       body: JSON.stringify({ url })
     });
     const data = await res.json();
-    if (!res.ok || data.status === 'timeout' || data.reachable === false) {
-      throw new Error('ping failed');
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    if (data.status === 'timeout') {
+      throw new Error('请求超时');
+    }
+    if (data.reachable === false) {
+      throw new Error('目标不可达');
     }
     if (typeof data.latency === 'number' && data.status !== 'degraded') {
       statusEl.textContent = `${data.latency} ms`;
@@ -162,7 +168,11 @@ function startAutoLatency(queue) {
       active += 1;
       testLatency(task.url, task.statusEl, task.btn, { auto: true })
         .catch((err) =>
-          console.warn('自动延迟检测失败', task.url, err?.message || err)
+          {
+            console.warn('自动延迟检测失败', task.url, err?.message || err);
+            task.statusEl.textContent = '自动测试失败';
+            task.statusEl.className = 'status fail';
+          }
         )
         .finally(() => {
           active -= 1;

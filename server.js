@@ -190,7 +190,9 @@ app.post('/api/ping', authenticate('user'), async (req, res) => {
     let response;
     try {
       response = await performRequest('HEAD');
-      if (response.status === 405 || response.status === 501) {
+      if (!response.ok && (response.status === 405 || response.status === 501)) {
+        response = await performRequest('GET');
+      } else if (!response.ok && response.status >= 500) {
         response = await performRequest('GET');
       }
     } catch (error) {
