@@ -32,6 +32,9 @@ body {
 
 .app-shell {
   width: min(1080px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .glass-card {
@@ -41,6 +44,17 @@ body {
   padding: 24px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(90, 209, 209, 0.08), transparent 30%),
+    radial-gradient(circle at 80% 0%, rgba(124, 139, 255, 0.08), transparent 30%);
+  pointer-events: none;
 }
 
 .header {
@@ -71,6 +85,26 @@ body {
   background: linear-gradient(135deg, rgba(90, 209, 209, 0.18), rgba(124, 139, 255, 0.18));
   color: var(--text);
   font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.meta-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 13px;
 }
 
 .layout {
@@ -152,6 +186,9 @@ textarea {
   background: linear-gradient(180deg, rgba(18, 32, 69, 0.95), rgba(14, 23, 46, 0.95));
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .domain-card h3 {
@@ -184,12 +221,21 @@ textarea {
   color: var(--danger);
 }
 
+.status.warn {
+  color: #f6c34c;
+}
+
 .alert {
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text);
+}
+
+.alert.info {
+  background: rgba(90, 209, 209, 0.08);
+  border-color: rgba(90, 209, 209, 0.25);
 }
 
 .hidden {
@@ -240,5 +286,22 @@ textarea {
   .header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 20px 12px;
+  }
+
+  .domain-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .btn.secondary {
+    width: 100%;
+    text-align: center;
   }
 }
